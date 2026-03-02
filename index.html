@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Dodge Game</title>
+
+<style>
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+  font-family:Arial;
+  touch-action:none;
+}
+
+#player{
+  position:absolute;
+  width:50px;
+  height:50px;
+  background:#00ff88;
+  border-radius:50%;
+}
+
+.enemy{
+  position:absolute;
+  width:35px;
+  height:35px;
+  background:red;
+  border-radius:50%;
+}
+
+#score{
+  position:fixed;
+  top:10px;
+  left:10px;
+  color:#00ff88;
+  font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="score">Score: 0</div>
+<div id="player"></div>
+
+<script>
+const player = document.getElementById("player");
+const scoreText = document.getElementById("score");
+
+let score = 0;
+let enemies = [];
+let gameOver = false;
+
+// ตำแหน่งเริ่มต้น
+player.style.left = window.innerWidth/2 - 25 + "px";
+player.style.top = window.innerHeight - 100 + "px";
+
+// ควบคุมด้วยนิ้ว
+document.addEventListener("touchmove", e=>{
+  const touch = e.touches[0];
+  player.style.left = touch.clientX - 25 + "px";
+  player.style.top = touch.clientY - 25 + "px";
+});
+
+// สร้างศัตรู
+function spawnEnemy(){
+  const enemy = document.createElement("div");
+  enemy.className = "enemy";
+  enemy.style.left = Math.random() * (window.innerWidth - 35) + "px";
+  enemy.style.top = "-40px";
+  document.body.appendChild(enemy);
+  enemies.push(enemy);
+}
+
+// อัปเดตเกม
+function update(){
+  if(gameOver) return;
+
+  score++;
+  scoreText.innerText = "Score: " + score;
+
+  enemies.forEach((enemy,index)=>{
+    enemy.style.top = enemy.offsetTop + 6 + "px";
+
+    const p = player.getBoundingClientRect();
+    const e = enemy.getBoundingClientRect();
+
+    if(
+      p.left < e.right &&
+      p.right > e.left &&
+      p.top < e.bottom &&
+      p.bottom > e.top
+    ){
+      alert("💀 GAME OVER\nScore: " + score);
+      location.reload();
+    }
+
+    if(enemy.offsetTop > window.innerHeight){
+      enemy.remove();
+      enemies.splice(index,1);
+    }
+  });
+
+  requestAnimationFrame(update);
+}
+
+setInterval(spawnEnemy, 800);
+update();
+</script>
+
+</body>
+</html>
