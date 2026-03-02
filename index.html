@@ -3,38 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobile Dodge Game</title>
+<title>Dino Game</title>
 
 <style>
 body{
   margin:0;
   overflow:hidden;
-  background:black;
+  background:#f7f7f7;
   font-family:Arial;
-  touch-action:none;
 }
 
-#player{
+#game{
+  position:relative;
+  width:100%;
+  height:300px;
+  background:white;
+  border-bottom:3px solid black;
+}
+
+#dino{
   position:absolute;
   width:50px;
   height:50px;
-  background:#00ff88;
-  border-radius:50%;
+  background:black;
+  bottom:0;
+  left:50px;
 }
 
-.enemy{
+.obstacle{
   position:absolute;
-  width:35px;
-  height:35px;
-  background:red;
-  border-radius:50%;
+  width:20px;
+  height:40px;
+  background:green;
+  bottom:0;
+  right:-20px;
 }
 
 #score{
-  position:fixed;
+  position:absolute;
   top:10px;
-  left:10px;
-  color:#00ff88;
+  right:20px;
   font-size:20px;
 }
 </style>
@@ -42,71 +50,99 @@ body{
 
 <body>
 
-<div id="score">Score: 0</div>
-<div id="player"></div>
+<div id="game">
+  <div id="score">0</div>
+  <div id="dino"></div>
+</div>
 
 <script>
-const player = document.getElementById("player");
+const dino = document.getElementById("dino");
 const scoreText = document.getElementById("score");
+const game = document.getElementById("game");
 
+let isJumping = false;
+let velocity = 0;
+let gravity = 0.8;
 let score = 0;
-let enemies = [];
+let speed = 5;
+let obstacles = [];
 let gameOver = false;
 
-// ตำแหน่งเริ่มต้น
-player.style.left = window.innerWidth/2 - 25 + "px";
-player.style.top = window.innerHeight - 100 + "px";
+// กระโดด
+function jump(){
+  if(!isJumping){
+    velocity = 15;
+    isJumping = true;
+  }
+}
 
-// ควบคุมด้วยนิ้ว
-document.addEventListener("touchmove", e=>{
-  const touch = e.touches[0];
-  player.style.left = touch.clientX - 25 + "px";
-  player.style.top = touch.clientY - 25 + "px";
+document.addEventListener("keydown", e=>{
+  if(e.code === "Space") jump();
 });
 
-// สร้างศัตรู
-function spawnEnemy(){
-  const enemy = document.createElement("div");
-  enemy.className = "enemy";
-  enemy.style.left = Math.random() * (window.innerWidth - 35) + "px";
-  enemy.style.top = "-40px";
-  document.body.appendChild(enemy);
-  enemies.push(enemy);
+document.addEventListener("touchstart", jump);
+
+// สร้างสิ่งกีดขวาง
+function spawnObstacle(){
+  const obs = document.createElement("div");
+  obs.className = "obstacle";
+  obs.style.right = "-20px";
+  game.appendChild(obs);
+  obstacles.push(obs);
 }
 
 // อัปเดตเกม
 function update(){
   if(gameOver) return;
 
-  score++;
-  scoreText.innerText = "Score: " + score;
+  // ฟิสิกส์กระโดด
+  velocity -= gravity;
+  let bottom = parseFloat(dino.style.bottom || 0);
+  bottom += velocity;
 
-  enemies.forEach((enemy,index)=>{
-    enemy.style.top = enemy.offsetTop + 6 + "px";
+  if(bottom <= 0){
+    bottom = 0;
+    isJumping = false;
+  }
 
-    const p = player.getBoundingClientRect();
-    const e = enemy.getBoundingClientRect();
+  dino.style.bottom = bottom + "px";
+
+  // ขยับสิ่งกีดขวาง
+  obstacles.forEach((obs,index)=>{
+    let right = parseFloat(obs.style.right);
+    right += speed;
+    obs.style.right = right + "px";
+
+    const d = dino.getBoundingClientRect();
+    const o = obs.getBoundingClientRect();
 
     if(
-      p.left < e.right &&
-      p.right > e.left &&
-      p.top < e.bottom &&
-      p.bottom > e.top
+      d.left < o.right &&
+      d.right > o.left &&
+      d.top < o.bottom &&
+      d.bottom > o.top
     ){
       alert("💀 GAME OVER\nScore: " + score);
       location.reload();
     }
 
-    if(enemy.offsetTop > window.innerHeight){
-      enemy.remove();
-      enemies.splice(index,1);
+    if(right > window.innerWidth){
+      obs.remove();
+      obstacles.splice(index,1);
     }
   });
+
+  score++;
+  scoreText.innerText = score;
+
+  if(score % 500 === 0){
+    speed += 1; // เพิ่มความเร็ว
+  }
 
   requestAnimationFrame(update);
 }
 
-setInterval(spawnEnemy, 800);
+setInterval(spawnObstacle, 1500);
 update();
 </script>
 
