@@ -3,71 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Dino Game</title>
+<title>Dino Offline</title>
 
 <style>
 body{
   margin:0;
+  background:white;
   overflow:hidden;
-  background:linear-gradient(to top,#111,#222);
-  font-family:Arial;
-  transition:0.5s;
+  font-family:monospace;
 }
 
 #game{
   position:relative;
   width:100%;
-  height:350px;
+  height:300px;
+  border-bottom:2px solid black;
   overflow:hidden;
-}
-
-#ground{
-  position:absolute;
-  bottom:0;
-  width:200%;
-  height:5px;
-  background:#00ff88;
-  animation:moveGround 2s linear infinite;
-}
-
-@keyframes moveGround{
-  from{transform:translateX(0);}
-  to{transform:translateX(-50%);}
 }
 
 #dino{
   position:absolute;
-  width:60px;
-  height:60px;
   bottom:0;
-  left:60px;
-  font-size:50px;
-  text-align:center;
-  line-height:60px;
-  transition:transform 0.1s;
+  left:50px;
+  font-size:40px;
 }
 
-.obstacle{
+.cactus{
   position:absolute;
-  width:25px;
-  height:50px;
-  background:#ff0040;
   bottom:0;
-  right:-30px;
-  border-radius:6px;
-  box-shadow:0 0 15px #ff0040;
+  font-size:35px;
+}
+
+.cloud{
+  position:absolute;
+  top:40px;
+  font-size:30px;
+  opacity:0.5;
 }
 
 #score{
   position:absolute;
-  top:15px;
+  top:10px;
   right:20px;
-  font-size:22px;
-  color:#00ff88;
+  font-size:18px;
 }
 
-.night{
-  background:linear-gradient(to top,#000,#111);
+#startText{
+  position:absolute;
+  width:100%;
+  top:120px;
+  text-align:center;
+  font-size:20px;
+  color:#555;
 }
 </style>
 </head>
@@ -75,52 +62,85 @@ body{
 <body>
 
 <div id="game">
-  <div id="score">0</div>
   <div id="dino">🦖</div>
-  <div id="ground"></div>
+  <div id="score">00000</div>
+  <div id="startText">กด Space หรือ แตะหน้าจอเพื่อเริ่ม</div>
 </div>
 
 <script>
 const dino = document.getElementById("dino");
 const scoreText = document.getElementById("score");
 const game = document.getElementById("game");
-const body = document.body;
+const startText = document.getElementById("startText");
 
-let isJumping = false;
 let velocity = 0;
-let gravity = 0.8;
+let gravity = 0.6;
+let isJumping = false;
 let score = 0;
 let speed = 6;
 let obstacles = [];
+let clouds = [];
+let running = false;
 let gameOver = false;
+
+// เริ่มเกม
+function startGame(){
+  if(!running){
+    running = true;
+    startText.style.display="none";
+  }
+}
 
 // กระโดด
 function jump(){
-  if(!isJumping){
-    velocity = 16;
+  if(!isJumping && running){
+    velocity = 14;
     isJumping = true;
-    dino.style.transform="scale(1.2)";
-    setTimeout(()=>dino.style.transform="scale(1)",150);
   }
 }
 
 document.addEventListener("keydown", e=>{
-  if(e.code==="Space") jump();
+  if(e.code==="Space"){
+    if(!running) startGame();
+    else if(gameOver) location.reload();
+    else jump();
+  }
 });
-document.addEventListener("touchstart", jump);
 
-// สร้างสิ่งกีดขวาง
-function spawnObstacle(){
-  const obs = document.createElement("div");
-  obs.className="obstacle";
-  obs.style.right="-30px";
-  game.appendChild(obs);
-  obstacles.push(obs);
+document.addEventListener("touchstart", ()=>{
+  if(!running) startGame();
+  else if(gameOver) location.reload();
+  else jump();
+});
+
+// สร้างกระบองเพชร
+function spawnCactus(){
+  if(!running || gameOver) return;
+  const cactus = document.createElement("div");
+  cactus.className="cactus";
+  cactus.innerText="🌵";
+  cactus.style.right="-40px";
+  game.appendChild(cactus);
+  obstacles.push(cactus);
+}
+
+// สร้างเมฆ
+function spawnCloud(){
+  const cloud=document.createElement("div");
+  cloud.className="cloud";
+  cloud.innerText="☁️";
+  cloud.style.right="-50px";
+  cloud.style.top=Math.random()*80+"px";
+  game.appendChild(cloud);
+  clouds.push(cloud);
 }
 
 // อัปเดตเกม
 function update(){
-  if(gameOver) return;
+  if(!running || gameOver){
+    requestAnimationFrame(update);
+    return;
+  }
 
   velocity -= gravity;
   let bottom = parseFloat(dino.style.bottom || 0);
@@ -130,9 +150,9 @@ function update(){
     bottom=0;
     isJumping=false;
   }
-
   dino.style.bottom=bottom+"px";
 
+  // ขยับกระบองเพชร
   obstacles.forEach((obs,index)=>{
     let right=parseFloat(obs.style.right);
     right+=speed;
@@ -147,8 +167,9 @@ function update(){
       d.top<o.bottom &&
       d.bottom>o.top
     ){
-      alert("💀 GAME OVER\nScore: "+score);
-      location.reload();
+      gameOver=true;
+      startText.innerText="GAME OVER - กดเพื่อเริ่มใหม่";
+      startText.style.display="block";
     }
 
     if(right>window.innerWidth){
@@ -157,22 +178,30 @@ function update(){
     }
   });
 
+  // ขยับเมฆ
+  clouds.forEach((c,index)=>{
+    let right=parseFloat(c.style.right);
+    right+=2;
+    c.style.right=right+"px";
+    if(right>window.innerWidth){
+      c.remove();
+      clouds.splice(index,1);
+    }
+  });
+
   score++;
-  scoreText.innerText=score;
+  scoreText.innerText=String(score).padStart(5,"0");
 
   if(score%500===0){
     speed+=1;
   }
 
-  // โหมดกลางคืนอัตโนมัติ
-  if(score>1000){
-    body.classList.add("night");
-  }
-
   requestAnimationFrame(update);
 }
 
-setInterval(spawnObstacle,1500);
+setInterval(spawnCactus,1500);
+setInterval(spawnCloud,3000);
+
 update();
 </script>
 
