@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dino Offline</title>
+<title>Pixel Dino Game</title>
 
 <style>
 body{
   margin:0;
-  background:white;
+  background:#fff;
   overflow:hidden;
   font-family:monospace;
 }
@@ -17,7 +17,7 @@ body{
   position:relative;
   width:100%;
   height:300px;
-  border-bottom:2px solid black;
+  border-bottom:2px solid #000;
   overflow:hidden;
 }
 
@@ -25,7 +25,19 @@ body{
   position:absolute;
   bottom:0;
   left:50px;
-  font-size:40px;
+  width:72px;
+  height:72px;
+}
+
+.pixel{
+  width:6px;
+  height:6px;
+  float:left;
+}
+
+.pixel-container{
+  width:72px;
+  height:72px;
 }
 
 .cactus{
@@ -37,7 +49,7 @@ body{
 .cloud{
   position:absolute;
   top:40px;
-  font-size:30px;
+  font-size:28px;
   opacity:0.5;
 }
 
@@ -62,7 +74,7 @@ body{
 <body>
 
 <div id="game">
-  <div id="dino">🦖</div>
+  <div id="dino"></div>
   <div id="score">00000</div>
   <div id="startText">กด Space หรือ แตะหน้าจอเพื่อเริ่ม</div>
 </div>
@@ -70,8 +82,8 @@ body{
 <script>
 const dino = document.getElementById("dino");
 const scoreText = document.getElementById("score");
-const game = document.getElementById("game");
 const startText = document.getElementById("startText");
+const game = document.getElementById("game");
 
 let velocity = 0;
 let gravity = 0.6;
@@ -82,11 +94,63 @@ let obstacles = [];
 let clouds = [];
 let running = false;
 let gameOver = false;
+let frameToggle = false;
+
+// pixel pattern 2 เฟรม (ขาวิ่งต่างกันเล็กน้อย)
+const frames = [
+[
+"000011110000",
+"000111111000",
+"001111111100",
+"001111111100",
+"011111111110",
+"011111111000",
+"011111000000",
+"011111111000",
+"011111111100",
+"001111011000",
+"000110011000",
+"000110011000"
+],
+[
+"000011110000",
+"000111111000",
+"001111111100",
+"001111111100",
+"011111111110",
+"011111111000",
+"011111000000",
+"011111111000",
+"011111111100",
+"001111001100",
+"000110001100",
+"000110001100"
+]
+];
+
+function drawDino(pattern){
+  dino.innerHTML="";
+  const container=document.createElement("div");
+  container.className="pixel-container";
+
+  pattern.forEach(row=>{
+    row.split("").forEach(cell=>{
+      const pixel=document.createElement("div");
+      pixel.className="pixel";
+      pixel.style.background=cell==="1"?"#000":"transparent";
+      container.appendChild(pixel);
+    });
+  });
+
+  dino.appendChild(container);
+}
+
+drawDino(frames[0]);
 
 // เริ่มเกม
 function startGame(){
   if(!running){
-    running = true;
+    running=true;
     startText.style.display="none";
   }
 }
@@ -94,12 +158,12 @@ function startGame(){
 // กระโดด
 function jump(){
   if(!isJumping && running){
-    velocity = 14;
-    isJumping = true;
+    velocity=14;
+    isJumping=true;
   }
 }
 
-document.addEventListener("keydown", e=>{
+document.addEventListener("keydown",e=>{
   if(e.code==="Space"){
     if(!running) startGame();
     else if(gameOver) location.reload();
@@ -107,7 +171,7 @@ document.addEventListener("keydown", e=>{
   }
 });
 
-document.addEventListener("touchstart", ()=>{
+document.addEventListener("touchstart",()=>{
   if(!running) startGame();
   else if(gameOver) location.reload();
   else jump();
@@ -116,7 +180,7 @@ document.addEventListener("touchstart", ()=>{
 // สร้างกระบองเพชร
 function spawnCactus(){
   if(!running || gameOver) return;
-  const cactus = document.createElement("div");
+  const cactus=document.createElement("div");
   cactus.className="cactus";
   cactus.innerText="🌵";
   cactus.style.right="-40px";
@@ -124,7 +188,7 @@ function spawnCactus(){
   obstacles.push(cactus);
 }
 
-// สร้างเมฆ
+// เมฆ
 function spawnCloud(){
   const cloud=document.createElement("div");
   cloud.className="cloud";
@@ -135,7 +199,6 @@ function spawnCloud(){
   clouds.push(cloud);
 }
 
-// อัปเดตเกม
 function update(){
   if(!running || gameOver){
     requestAnimationFrame(update);
@@ -143,16 +206,22 @@ function update(){
   }
 
   velocity -= gravity;
-  let bottom = parseFloat(dino.style.bottom || 0);
-  bottom += velocity;
+  let bottom=parseFloat(dino.style.bottom||0);
+  bottom+=velocity;
 
   if(bottom<=0){
     bottom=0;
     isJumping=false;
   }
+
   dino.style.bottom=bottom+"px";
 
-  // ขยับกระบองเพชร
+  // สลับเฟรมตอนวิ่ง
+  if(!isJumping && score%10===0){
+    frameToggle=!frameToggle;
+    drawDino(frames[frameToggle?1:0]);
+  }
+
   obstacles.forEach((obs,index)=>{
     let right=parseFloat(obs.style.right);
     right+=speed;
@@ -178,7 +247,6 @@ function update(){
     }
   });
 
-  // ขยับเมฆ
   clouds.forEach((c,index)=>{
     let right=parseFloat(c.style.right);
     right+=2;
