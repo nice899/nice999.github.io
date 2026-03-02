@@ -3,47 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dino Game</title>
+<title>Neon Dino Game</title>
 
 <style>
 body{
   margin:0;
   overflow:hidden;
-  background:#f7f7f7;
+  background:linear-gradient(to top,#111,#222);
   font-family:Arial;
+  transition:0.5s;
 }
 
 #game{
   position:relative;
   width:100%;
-  height:300px;
-  background:white;
-  border-bottom:3px solid black;
+  height:350px;
+  overflow:hidden;
+}
+
+#ground{
+  position:absolute;
+  bottom:0;
+  width:200%;
+  height:5px;
+  background:#00ff88;
+  animation:moveGround 2s linear infinite;
+}
+
+@keyframes moveGround{
+  from{transform:translateX(0);}
+  to{transform:translateX(-50%);}
 }
 
 #dino{
   position:absolute;
-  width:50px;
-  height:50px;
-  background:black;
+  width:60px;
+  height:60px;
   bottom:0;
-  left:50px;
+  left:60px;
+  font-size:50px;
+  text-align:center;
+  line-height:60px;
+  transition:transform 0.1s;
 }
 
 .obstacle{
   position:absolute;
-  width:20px;
-  height:40px;
-  background:green;
+  width:25px;
+  height:50px;
+  background:#ff0040;
   bottom:0;
-  right:-20px;
+  right:-30px;
+  border-radius:6px;
+  box-shadow:0 0 15px #ff0040;
 }
 
 #score{
   position:absolute;
-  top:10px;
+  top:15px;
   right:20px;
-  font-size:20px;
+  font-size:22px;
+  color:#00ff88;
+}
+
+.night{
+  background:linear-gradient(to top,#000,#111);
 }
 </style>
 </head>
@@ -52,41 +76,44 @@ body{
 
 <div id="game">
   <div id="score">0</div>
-  <div id="dino"></div>
+  <div id="dino">🦖</div>
+  <div id="ground"></div>
 </div>
 
 <script>
 const dino = document.getElementById("dino");
 const scoreText = document.getElementById("score");
 const game = document.getElementById("game");
+const body = document.body;
 
 let isJumping = false;
 let velocity = 0;
 let gravity = 0.8;
 let score = 0;
-let speed = 5;
+let speed = 6;
 let obstacles = [];
 let gameOver = false;
 
 // กระโดด
 function jump(){
   if(!isJumping){
-    velocity = 15;
+    velocity = 16;
     isJumping = true;
+    dino.style.transform="scale(1.2)";
+    setTimeout(()=>dino.style.transform="scale(1)",150);
   }
 }
 
 document.addEventListener("keydown", e=>{
-  if(e.code === "Space") jump();
+  if(e.code==="Space") jump();
 });
-
 document.addEventListener("touchstart", jump);
 
 // สร้างสิ่งกีดขวาง
 function spawnObstacle(){
   const obs = document.createElement("div");
-  obs.className = "obstacle";
-  obs.style.right = "-20px";
+  obs.className="obstacle";
+  obs.style.right="-30px";
   game.appendChild(obs);
   obstacles.push(obs);
 }
@@ -95,54 +122,57 @@ function spawnObstacle(){
 function update(){
   if(gameOver) return;
 
-  // ฟิสิกส์กระโดด
   velocity -= gravity;
   let bottom = parseFloat(dino.style.bottom || 0);
   bottom += velocity;
 
-  if(bottom <= 0){
-    bottom = 0;
-    isJumping = false;
+  if(bottom<=0){
+    bottom=0;
+    isJumping=false;
   }
 
-  dino.style.bottom = bottom + "px";
+  dino.style.bottom=bottom+"px";
 
-  // ขยับสิ่งกีดขวาง
   obstacles.forEach((obs,index)=>{
-    let right = parseFloat(obs.style.right);
-    right += speed;
-    obs.style.right = right + "px";
+    let right=parseFloat(obs.style.right);
+    right+=speed;
+    obs.style.right=right+"px";
 
-    const d = dino.getBoundingClientRect();
-    const o = obs.getBoundingClientRect();
+    const d=dino.getBoundingClientRect();
+    const o=obs.getBoundingClientRect();
 
     if(
-      d.left < o.right &&
-      d.right > o.left &&
-      d.top < o.bottom &&
-      d.bottom > o.top
+      d.left<o.right &&
+      d.right>o.left &&
+      d.top<o.bottom &&
+      d.bottom>o.top
     ){
-      alert("💀 GAME OVER\nScore: " + score);
+      alert("💀 GAME OVER\nScore: "+score);
       location.reload();
     }
 
-    if(right > window.innerWidth){
+    if(right>window.innerWidth){
       obs.remove();
       obstacles.splice(index,1);
     }
   });
 
   score++;
-  scoreText.innerText = score;
+  scoreText.innerText=score;
 
-  if(score % 500 === 0){
-    speed += 1; // เพิ่มความเร็ว
+  if(score%500===0){
+    speed+=1;
+  }
+
+  // โหมดกลางคืนอัตโนมัติ
+  if(score>1000){
+    body.classList.add("night");
   }
 
   requestAnimationFrame(update);
 }
 
-setInterval(spawnObstacle, 1500);
+setInterval(spawnObstacle,1500);
 update();
 </script>
 
